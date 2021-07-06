@@ -1,0 +1,194 @@
+---
+title: "hsslda-intro"
+author: "meelad amouzgar"
+date: "7/5/2021"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{hsslda-intro}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+
+# LDA with Hybrid Subset Selection (HSS)
+Authors: Meelad Amouzgar and David Glass
+
+
+Bendall lab @ Stanford University
+
+
+Not permitted for distribution outside of the Bendall lab @ Stanford 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = getwd())
+
+```
+
+## Introduction:
+Linear Discriminant Analysis (LDA) is a classification algorithm that we've repurposed for supervised dimensionality reduction of single-cell data. LDA identifies linear combinations of predictors that optimally separate a priori labels, enabling users to tailor visualizations to separate specific aspects of cellular heterogeneity. We implement LDA with feature selection by Hybrid Subset Selection (HSS) in this R package, called hsslda. 
+
+
+
+## Installation instructons:
+
+You can install hsslda using:
+```{r eval=FALSE}
+remotes::install_github("mamouzgar/hsslda", build_vignettes = FALSE)
+```
+
+
+The github page includes an introduction to the package.
+Or if you'd like the introductory vignette seen below included in your Rstudio installation of hsslda, you can use:
+```{r eval=FALSE}
+remotes::install_github("mamouzgar/hsslda", build_vignettes = TRUE)
+```
+
+```{r, warning=FALSE, include=FALSE}
+library(magrittr)
+```
+
+```{r, warning=FALSE, include=TRUE, results = 'hide', message = FALSE}
+library(hsslda)
+```
+
+Here we read-in the example data
+```{r, include = FALSE, results = 'hide', echo= FALSE}
+# load("/Users/mamouzgar/phd-projects/Rpackage/hsslda/data/TcellHartmann2020_sampleData.rda")
+```
+
+```{r,  eval=FALSE}
+data(TcellHartmann2020_sampleData)
+
+```
+
+         
+```{r}
+colnames(TcellHartmann2020_sampleData)
+head(TcellHartmann2020_sampleData,3)
+```
+
+## How to run HSS-LDA:
+
+You can run hybrid subset selection on a dataset using runHSS(). 
+
+runHSS takes 3 inputs:
+
+1) x: a dataframe of cells (rows) and markers/genes (columns)
+
+2) y: a vector of your class labels of interest. 
+
+3) score.method: A scoring metric to use for feature selection, which can include: 'euclidean', 'silhouette', 'pixel.entropy', 'pixel.density', or 'custom'
+
+4) (optional) downsample: Boolean, defaults to TRUE. Downsamples data to improve runtime. Set to FALSE to use all input data.
+
+Here we will run HSS using the default scoring method: euclidean distance.Note that scoring metrics like silhouette or pixel class entropy (PCE) score will require additional package dependencies. 
+```{r, echo=TRUE}
+channels = c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1', 'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A')
+train.x = TcellHartmann2020_sampleData[channels]
+train.y = TcellHartmann2020_sampleData[['labels']]
+hss.result = runHSS(x = train.x, y = train.y, score.method = 'silhouette', downsample = FALSE)
+
+```
+
+
+## Output summary:
+
+The final hss.result object outputted from runHSS contains a few elements, the most important ones are highlighted below:
+
+1) HSSscores: a table of all scores for each subsetted model.
+
+2) ElbowPlot: visualizes the elbow plot and calculated elbow point for the optimal feature set.
+
+3) HSS-LDA-model: The final LDA model using the optimal feature set.
+
+4) HSS-LDA-result: The final result table containing all initially inputted markers, class labels, and linear discriminants from the opimal model.
+
+5) downsampled.cells.included.in.analysis: A boolean vector of rows included in the downsampling analysis. If downsampling was not performed, all values are TRUE. The final output results includes all data projected onto the HSS-LD axes.
+
+You can visualize the elbow plot, which is ggplot configurable:
+```{r}
+hss.result$ElbowPlot
+```
+
+The final output object contains a merged dataframe of your markers, class labels, and newly generated LD axes
+```{r}
+lda.df = hss.result$`HSS-LDA-result`
+head(lda.df, 3)
+```
+
+
+```{r, echo=FALSE}
+viridis.colors = c("#440154FF", "#414487FF", "#2A788EFF", "#22A884FF", "#7AD151FF", "#FDE725FF")
+names(viridis.colors) = unique(lda.df$labels)
+myColScale = ggplot2::scale_color_manual(values = viridis.colors)
+
+```
+
+
+```{r}
+ggplot2::ggplot(lda.df,ggplot2::aes(x = HSS_LD1, y = HSS_LD2, color = labels)) +
+  ggplot2::geom_point() +
+  myColScale
+```
+
+
+
+
+The final HSS-LDA model is also saved, and can be used like any R model.
+```{r, echo=TRUE}
+hss.result$`HSS-LDA-model`
+```
+
+```{r, echo=FALSE, results = 'hide'}
+newdata = train.x
+```
+
+You can use this final model to apply the same dimensionality reduction to new data using makeAxes.
+```{r, echo=TRUE, results = 'hide'}
+lda.df.newData = makeAxes(df = newdata, co =hss.result$`HSS-LDA-model`$scaling)
+```
+
+
+You can also add your own custom separation metric to perform feature selection with by changing score.method = 'custom' and adding custom function. 
+The custom function must take in as input:
+
+1) x: dataframe of all your data.
+
+2) y: vector of class labels matching training data rows.
+
+3) custom.score.method: the function for your custom separation metric.
+
+
+You can then input your custom function into the hsslda::runHSS() function as an argument into custom.score.method, and indicate score.method = 'custom'
+
+```{r eval=FALSE}
+hss.resultCustom = runHSS(x = train.x, y = train.y, score.method = 'custom', custom.score.method = myCustomFunction)
+```
+
+
+And that's how you use LDA with Hybrid Subset Selection!
+
+
+Questions, comments, or general feedback:
+
+
+amouzgar@stanford.edu
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
