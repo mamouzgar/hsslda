@@ -1,9 +1,9 @@
 {
     "id": "04B0382B",
-    "path": "~/phd-projects/Rpackages/hsslda/R/hybryd-subset-selection.R",
-    "project_path": "R/hybryd-subset-selection.R",
+    "path": "~/phd-projects/Rpackages/hsslda/R/hybrid-subset-selection.R",
+    "project_path": "R/hybrid-subset-selection.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "395089143",
     "contents": "",
     "dirty": false,
     "created": 1625606678826.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "43,33",
-        "scrollLine": "21"
+        "cursorPosition": "8,17",
+        "scrollLine": "0"
     },
     "folds": "",
     "lastKnownWriteTime": 1625607761,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1625607761621,
+    "last_content_update": 1625607761,
     "read_only": false,
     "read_only_alternatives": []
 }
