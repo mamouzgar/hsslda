@@ -87,19 +87,25 @@ Here we will run HSS using the default scoring method: euclidean distance.Note t
 ```{r, echo=TRUE}
 data(TcellHartmann2020_sampleData)
 
+mydata = TcellHartmann2020_sampleData %>% dplyr::bind_rows(.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.,.)
 channels = c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1', 'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A')
-train.x = TcellHartmann2020_sampleData[channels]
-train.y = TcellHartmann2020_sampleData[['labels']]
+train.x = mydata[channels]
+train.y = mydata[['labels']]
 
-start.time = Sys.time()
-hss.result = runHSS(x = train.x, y = train.y, score.method = "pixel.entropy", downsample = FALSE)
-end.time = Sys.time()
-end.time-start.time
-myTimes= lapply(c("euclidean","pixel.entropy"), function(score.method){
-start.time = Sys.time()
-hss.result = runHSS(x = train.x, y = train.y, score.method = score.method, downsample = FALSE)
-end.time = Sys.time()
-return(end.time-start.time)
+# start.time = Sys.time()
+# hss.result = runHSS(x = train.x[1:5], y = train.y, score.method = "pixel.entropy", downsample = FALSE)
+# end.time = Sys.time()
+# end.time-start.time
+
+
+
+myResults = lapply(c("euclidean","pixel.entropy"), function(score.method){
+     start.time = Sys.time()
+     hss.result = runHSS(x = train.x, y = train.y, score.method = score.method, downsample = FALSE)
+     end.time = Sys.time()
+     
+     hss.result[["time"]] = end.time-start.time
+     return(hss.result)
 })
 
 
