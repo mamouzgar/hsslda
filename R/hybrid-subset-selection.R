@@ -532,10 +532,14 @@ hybridSubsetSelection <- function(x, y, score.method , custom.score.method = NUL
                 for (channel in keep) {
                         temp.keep <- keep[!keep %in% channel]
                         temp.score <- getScore(x, y, cols = temp.keep, score.method)
+                        if (is.null(temp.score)){
+                             temp.score = 0
+                        }
                         temp.results <- rbind(temp.results, as.list(channels %in% temp.keep) %>% append(temp.score))
                 }
                 # message(colnames(temp.results))
                 # message( colnames(results))
+                # print(colnames(results))
                 colnames(temp.results) = colnames(results)
                 # temp.results <<- temp.results
                 # current.score <<- current.score
