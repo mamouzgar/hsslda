@@ -376,7 +376,7 @@ getScore <- function(x , y, cols, score.method) {
                         # message("euclidean")
                         scoreFunction <- getScore_euclidean_2class(x, y, cols)
                         return(scoreFunction)
-                } } else if (score.method == "euclidean_mean") {
+                } else if (score.method == "euclidean_mean") {
                         # message("euclidean")
                         scoreFunction <- getScore_euclidean_mean(x, y, cols)
                         return(scoreFunction)
