@@ -715,8 +715,8 @@ downSampleData <- function(x, y){
 #' @keywords internal
 #' @export
 runHSS <- function(x, y, score.method, custom.score.method = NULL, downsample = TRUE){
-        if (!score.method %in% c("euclidean","silhouette", "pixel.density","pixel.entropy")){
-                stop("score.method method must be: 'euclidean', 'silhouette', 'pixel.density', 'pixel.entropy', or 'custom'.")
+        if (!score.method %in% c("euclidean","euclidean_2class", "silhouette", "pixel.density","pixel.entropy")){
+                stop("score.method method must be: 'euclidean', 'euclidean_2class', 'silhouette', 'pixel.density', 'pixel.entropy', or 'custom'.")
         }
 
         ## save original input data
@@ -913,5 +913,12 @@ runHSS <- function(x, y, score.method, custom.score.method = NULL, downsample = 
 #
 #
 # lda.out = MASS::lda(hsslda::TcellHartmann2020_sampleData[1:5],hsslda::TcellHartmann2020_sampleData$labels)
+
+
+# channels = c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1', 'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A')
+# train.x = TcellHartmann2020_sampleData %>% dplyr::filter(labels %in% c("day0","day4")) %>% .[channels]
+# train.y = TcellHartmann2020_sampleData%>% dplyr::filter(labels %in% c("day0","day4")) %>% .[['labels']]
+# hss.result = runHSS(x = train.x, y = train.y, score.method = 'euclidean_2class', downsample = FALSE)
+
 
 
