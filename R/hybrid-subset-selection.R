@@ -935,19 +935,19 @@ runHSS <- function(x, y, score.method, custom.score.method = NULL, downsample = 
 # channels = c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1', 'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A')
 # train.x = TcellHartmann2020_sampleData %>% dplyr::filter(labels %in% c("day0","day4")) %>% .[channels]
 # train.y = TcellHartmann2020_sampleData%>% dplyr::filter(labels %in% c("day0","day4")) %>% .[['labels']]
-test = data.table::fread("/Users/meelad/phd-projects/sc-lda/data/original-data/invitro-tcells-c393.csv") %>% as_tibble()
-
-channels.metabolism <- c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1',
-                         'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A', 'PDK1_p', 'NRF1',
-                         'NRF2_p', 'XBP1', 'VDAC1', 'OPA1', 'DRP1', 'ASCT2', 'CD98', 'GLS', 'GOT2', 'CPT1A',
-                         'ACADM', 'IdU', 'BrU', 'Puromycin', 'H3_p')
-test$cell.id = paste("cell",1:nrow(test),sep="")
-train = test %>% dplyr::filter(grepl("naive",gate.source),grepl("CD8",gate.source), grepl("day0|day4",gate.source)) %>%
-        group_by(gate.source) %>% sample_n(5000) %>% .$cell.id
-
-train.x = test  %>% .[ .$cell.id %in% train, channels.metabolism]
-train.y = test%>% .[ .$cell.id %in% train, "gate.source"] %>% .$gate.source
-hss.result = runHSS(x = train.x, y = factor(train.y), score.method = 'euclidean_2class', downsample = FALSE)
+# test = data.table::fread("/Users/meelad/phd-projects/sc-lda/data/original-data/invitro-tcells-c393.csv") %>% as_tibble()
+#
+# channels.metabolism <- c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1',
+#                          'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A', 'PDK1_p', 'NRF1',
+#                          'NRF2_p', 'XBP1', 'VDAC1', 'OPA1', 'DRP1', 'ASCT2', 'CD98', 'GLS', 'GOT2', 'CPT1A',
+#                          'ACADM', 'IdU', 'BrU', 'Puromycin', 'H3_p')
+# test$cell.id = paste("cell",1:nrow(test),sep="")
+# train = test %>% dplyr::filter(grepl("naive",gate.source),grepl("CD8",gate.source), grepl("day0|day4",gate.source)) %>%
+#         group_by(gate.source) %>% sample_n(5000) %>% .$cell.id
+#
+# train.x = test  %>% .[ .$cell.id %in% train, channels.metabolism]
+# train.y = test%>% .[ .$cell.id %in% train, "gate.source"] %>% .$gate.source
+# hss.result = runHSS(x = train.x, y = factor(train.y), score.method = 'euclidean_2class', downsample = FALSE)
 
 
 
