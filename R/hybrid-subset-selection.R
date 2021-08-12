@@ -245,6 +245,18 @@ getScore_euclidean <- function(x, y, cols) {
         return(eucl_score)
 }
 
+#' @description getScore_euclidean: An aggregate function to compute LDA and euclidean distance score for HSS specifically for 2-class LDA
+#' @param x dataframe of training data
+#' @param y vector of class labels matching training data rows
+#' @param cols vector of column names
+#' @noRd
+getScore_euclidean_2class <- function(x, y, cols) {
+        # performs LDA using columns provided and returns lowest euclidean distance between pop means
+        lda.out <- lda(y~as.matrix(x[, cols]))
+        eucl_score = min(dist(lda.out$means %*% lda.out$scaling[,1]))
+        # message(eucl_score)
+        return(eucl_score)
+}
 #######################
 ## SILHOUETTE SCORE  ##
 #######################
@@ -346,6 +358,10 @@ getScore <- function(x , y, cols, score.method) {
                 if (score.method == "euclidean") {
                         # message("euclidean")
                         scoreFunction <- getScore_euclidean(x, y, cols)
+                        return(scoreFunction)
+                } else if (score.method == "euclidean_2class") {
+                        # message("euclidean")
+                        scoreFunction <- getScore_euclidean_2class(x, y, cols)
                         return(scoreFunction)
                 } else if (score.method == "silhouette") {
                         # message("silhouette")
