@@ -245,7 +245,20 @@ getScore_euclidean <- function(x, y, cols) {
         return(eucl_score)
 }
 
-#' @description getScore_euclidean: An aggregate function to compute LDA and euclidean distance score for HSS specifically for 2-class LDA
+#' @description getScore_euclidean_mean: An aggregate function to compute LDA and an average euclidean distance score across all classes for HSS
+#' @param x dataframe of training data
+#' @param y vector of class labels matching training data rows
+#' @param cols vector of column names
+#' @noRd
+getScore_euclidean_mean <- function(x, y, cols) {
+        # performs LDA using columns provided and returns lowest euclidean distance between pop means
+        lda.out <- lda(y~as.matrix(x[, cols]))
+        eucl_score = mean(dist(lda.out$means %*% lda.out$scaling[,1:2]))
+        # message(eucl_score)
+        return(eucl_score)
+}
+
+#' @description getScore_euclidean_2class: An aggregate function to compute LDA and euclidean distance score for HSS specifically for 2-class LDA
 #' @param x dataframe of training data
 #' @param y vector of class labels matching training data rows
 #' @param cols vector of column names
@@ -362,6 +375,10 @@ getScore <- function(x , y, cols, score.method) {
                 } else if (score.method == "euclidean_2class") {
                         # message("euclidean")
                         scoreFunction <- getScore_euclidean_2class(x, y, cols)
+                        return(scoreFunction)
+                } } else if (score.method == "euclidean_mean") {
+                        # message("euclidean")
+                        scoreFunction <- getScore_euclidean_mean(x, y, cols)
                         return(scoreFunction)
                 } else if (score.method == "silhouette") {
                         # message("silhouette")
@@ -715,8 +732,8 @@ downSampleData <- function(x, y){
 #' @keywords internal
 #' @export
 runHSS <- function(x, y, score.method, custom.score.method = NULL, downsample = TRUE){
-        if (!score.method %in% c("euclidean","euclidean_2class", "silhouette", "pixel.density","pixel.entropy")){
-                stop("score.method method must be: 'euclidean', 'euclidean_2class', 'silhouette', 'pixel.density', 'pixel.entropy', or 'custom'.")
+        if (!score.method %in% c("euclidean","euclidean_2class", "euclidean_mean", "silhouette", "pixel.density","pixel.entropy")){
+                stop("score.method method must be: 'euclidean', 'euclidean_2class', 'euclidean_mean', silhouette', 'pixel.density', 'pixel.entropy', or 'custom'.")
         }
 
         ## save original input data
@@ -746,7 +763,6 @@ runHSS <- function(x, y, score.method, custom.score.method = NULL, downsample = 
 
         return(hss.results)
 }
-
 
 # setwd("~/phd-projects")
 # library(dplyr)
@@ -912,13 +928,26 @@ runHSS <- function(x, y, score.method, custom.score.method = NULL, downsample = 
 # )
 #
 #
-# lda.out = MASS::lda(hsslda::TcellHartmann2020_sampleData[1:5],hsslda::TcellHartmann2020_sampleData$labels)
+# lda.out = MASS::lda(hsslda::TcellHartmann2020_sampleData[-(ncol(TcellHartmann2020_sampleData))],hsslda::TcellHartmann2020_sampleData$labels)
+
 
 
 # channels = c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1', 'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A')
 # train.x = TcellHartmann2020_sampleData %>% dplyr::filter(labels %in% c("day0","day4")) %>% .[channels]
 # train.y = TcellHartmann2020_sampleData%>% dplyr::filter(labels %in% c("day0","day4")) %>% .[['labels']]
-# hss.result = runHSS(x = train.x, y = train.y, score.method = 'euclidean_2class', downsample = FALSE)
+test = data.table::fread("/Users/meelad/phd-projects/sc-lda/data/original-data/invitro-tcells-c393.csv") %>% as_tibble()
+
+channels.metabolism <- c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1',
+                         'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A', 'PDK1_p', 'NRF1',
+                         'NRF2_p', 'XBP1', 'VDAC1', 'OPA1', 'DRP1', 'ASCT2', 'CD98', 'GLS', 'GOT2', 'CPT1A',
+                         'ACADM', 'IdU', 'BrU', 'Puromycin', 'H3_p')
+test$cell.id = paste("cell",1:nrow(test),sep="")
+train = test %>% dplyr::filter(grepl("naive",gate.source),grepl("CD8",gate.source), grepl("day0|day4",gate.source)) %>%
+        group_by(gate.source) %>% sample_n(5000) %>% .$cell.id
+
+train.x = test  %>% .[ .$cell.id %in% train, channels.metabolism]
+train.y = test%>% .[ .$cell.id %in% train, "gate.source"] %>% .$gate.source
+hss.result = runHSS(x = train.x, y = factor(train.y), score.method = 'euclidean_2class', downsample = FALSE)
 
 
 
