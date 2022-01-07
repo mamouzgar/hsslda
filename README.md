@@ -5,7 +5,7 @@ Authors: Meelad Amouzgar and David Glass
 
 Bendall lab @ Stanford University
 
-Not permitted for distribution outside of the Bendall lab @ Stanford
+This repository is still under development.
 
 Introduction:
 -------------
