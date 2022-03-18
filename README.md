@@ -220,8 +220,7 @@ head(lda.df, 3)
 
 ``` r
 ggplot2::ggplot(lda.df,ggplot2::aes(x = LD1, y = LD2, color = labels)) +
-  ggplot2::geom_point() +
-  myColScale
+  ggplot2::geom_point() 
 ```
 
 ![](/private/var/folders/_p/dzrkxwzd30l1jx40q6_p26gj_sqz2b/T/RtmpeTiudj/preview-669969b2ba1d.dir/hsslda-intro-md_files/figure-markdown_github/unnamed-chunk-12-1.png)
