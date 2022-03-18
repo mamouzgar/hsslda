@@ -27,14 +27,7 @@ You can install hsslda using:
 remotes::install_github("mamouzgar/hsslda", build_vignettes = FALSE)
 ```
 
-The github page includes an introduction to the package. Or if you’d
-like the introductory vignette seen below included in your Rstudio
-installation of hsslda, you can use:
-
-``` r
-remotes::install_github("mamouzgar/hsslda", build_vignettes = TRUE)
-```
-
+The github page includes an introduction to the package.
 ``` r
 library(hsslda)
 ```
