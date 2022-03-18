@@ -27,6 +27,7 @@
 #' @importFrom dplyr summarize
 #' @importFrom dplyr n
 #' @importFrom dplyr %>%
+#' @importFrom magrittr %>%
 #' @importFrom dplyr mutate
 #' @importFrom dplyr rowwise
 #' @importFrom dplyr bind_rows
