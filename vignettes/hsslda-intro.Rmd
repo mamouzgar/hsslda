@@ -83,7 +83,7 @@ runHSS takes 3 inputs:
 
 4) (optional) downsample: Boolean, defaults to TRUE. Downsamples data to improve runtime. Set to FALSE to use all input data.
 
-Here we will run HSS using the default scoring method: euclidean distance.Note that scoring metrics like silhouette or pixel class entropy (PCE) score will require additional package dependencies. 
+Here we will run HSS using the default scoring method: euclidean distance. Note that scoring metrics like silhouette or pixel class entropy (PCE) score will require additional package dependencies. 
 ```{r, echo=TRUE}
 data(TcellHartmann2020_sampleData)
 
@@ -91,25 +91,7 @@ mydata = TcellHartmann2020_sampleData %>% dplyr::bind_rows(.,.,.,.,.,.,.,.,.,.,.
 channels = c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1', 'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A')
 train.x = mydata[channels]
 train.y = mydata[['labels']]
-
-# start.time = Sys.time()
-# hss.result = runHSS(x = train.x[1:5], y = train.y, score.method = "pixel.entropy", downsample = FALSE)
-# end.time = Sys.time()
-# end.time-start.time
-
-
-
-myResults = lapply(c("euclidean","pixel.entropy"), function(score.method){
-     start.time = Sys.time()
-     hss.result = runHSS(x = train.x, y = train.y, score.method = score.method, downsample = FALSE)
-     end.time = Sys.time()
-     
-     hss.result[["time"]] = end.time-start.time
-     return(hss.result)
-})
-
-
-
+hss.result = runHSS(x = train.x, y = train.y, score.method = 'euclidean', downsample = FALSE)
 ```
 
 
@@ -188,13 +170,7 @@ hss.resultCustom = runHSS(x = train.x, y = train.y, score.method = 'custom', cus
 ```
 
 
-And that's how you use LDA with Hybrid Subset Selection!
-
-
-Questions, comments, or general feedback:
-
-
-amouzgar@stanford.edu
+And that's how you use LDA with Hybrid Subset Selection.
 
 
 
