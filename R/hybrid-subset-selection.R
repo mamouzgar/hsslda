@@ -83,28 +83,71 @@ plotElbow <- function(results, elbow = NULL){
 #################################
 #################################
 
-##############################
-## PIXEL ANALYSIS FUNCTIONS ##
-##############################
-# create_pixel_grid <- function(xbreaks =100, ybreaks = 100) {
-#   pixel.grid = base::expand.grid(1:xbreaks,1:ybreaks) %>% data.frame(.)
-#   base::colnames(pixel.grid) = c("x","y")
-#   pixel.grid$pixel = base::paste(pixel.grid$x,pixel.grid$y, sep =".")
-#   return(pixel.grid)
-# }
-#
-# generate_density_map <- function(data, pixel.grid = pixel.grid, xbreaks = 100, ybreaks = 100) {
-#   ## returns a density map only of pixels that have cells in them
-#   xbin <- base::cut(data$x, xbreaks, include.lowest = TRUE)
-#   ybin <- base::cut(data$y, ybreaks, include.lowest = TRUE)
-#
-#   data_pixel_counts = cbind(data, xout = as.numeric(xbin), yout = as.numeric(ybin) )
-#   data_pixel_counts["pixel"] = paste(data_pixel_counts$xout, data_pixel_counts$yout, sep=".")
-#   data_pixel_counts = table(pixel = data_pixel_counts$pixel, labels = data_pixel_counts$labels) %>% as.data.frame() %>% .[.$Freq !=0, ] # %>% base::merge(.,pixel.grid, by = "pixel", all.y = TRUE)
-#   data_pixel_counts["count.0"] = ifelse(is.na(data_pixel_counts$Freq), 0,data_pixel_counts$Freq )
-#   data_pixel_counts = data_pixel_counts %>% split(., .$labels) %>% lapply(., function(dp){dp["percent.0"] = dp$count.0/sum(dp$count.0) ;return(dp) }) %>% do.call("rbind", .)
-#   return(data_pixel_counts)
-# }
+########################
+## EUCLIDEAN DISTANCE ##
+########################
+#' @description getScore_euclidean: An aggregate function to compute LDA and euclidean distance score for HSS.
+#' @param x dataframe of training data
+#' @param y vector of class labels matching training data rows
+#' @param cols vector of column names
+#' @noRd
+getScore_euclidean <- function(x, y, cols) {
+     # performs LDA using columns provided and returns lowest euclidean distance between pop means
+     lda.out <- lda(y~as.matrix(x[, cols]))
+     eucl_score = min(dist(lda.out$means %*% lda.out$scaling[,1:2]))
+     # message(eucl_score)
+     return(eucl_score)
+}
+
+#' @description getScore_euclidean_mean: An aggregate function to compute LDA and an average euclidean distance score across all classes for HSS
+#' @param x dataframe of training data
+#' @param y vector of class labels matching training data rows
+#' @param cols vector of column names
+#' @noRd
+getScore_euclidean_mean <- function(x, y, cols) {
+     # performs LDA using columns provided and returns lowest euclidean distance between pop means
+     lda.out <- lda(y~as.matrix(x[, cols]))
+     eucl_score = mean(dist(lda.out$means %*% lda.out$scaling[,1:2]))
+     # message(eucl_score)
+     return(eucl_score)
+}
+
+#' @description getScore_euclidean_2class: An aggregate function to compute LDA and euclidean distance score for HSS specifically for 2-class LDA
+#' @param x dataframe of training data
+#' @param y vector of class labels matching training data rows
+#' @param cols vector of column names
+#' @noRd
+getScore_euclidean_2class <- function(x, y, cols) {
+     # performs LDA using columns provided and returns lowest euclidean distance between pop means
+     lda.out <- lda(y~as.matrix(x[, cols]))
+     eucl_score = min(dist(lda.out$means %*% lda.out$scaling[,1]))
+     # message(eucl_score)
+     return(eucl_score)
+}
+#######################
+## SILHOUETTE SCORE  ##
+#######################
+#' @description getScore_silhouette: An aggregate function to compute LDA and silouette score for HSS.
+#' @param x dataframe of training data
+#' @param y vector of class labels matching training data rows
+#' @param cols vector of column names
+#' @noRd
+#' @keywords internal
+getScore_silhouette  <- function(x, y, cols) {
+
+     ## computes precise silhouette score but is slow since it requires a distance matrix
+     df = x[, cols] %>% as.matrix()
+     lda.out <- lda(y~as.matrix(x[, cols]))
+
+     dist.matrix = df %>% dist() %>% as.matrix()
+     silhoutte.output = silhouette(x = as.numeric(factor(y)), dmatrix = dist.matrix, do.clus.stat = TRUE, do.n.k=TRUE )
+
+     silh.result.all = df %>% cbind(., data.frame(cluster = silhoutte.output[,1], neighbor = silhoutte.output[,2], sil_width = silhoutte.output[,3] ))
+     sum.sil = summary(silhoutte.output)
+     silhouette.score = mean(sum.sil$clus.avg.widths)
+     # message(silhouette.score)
+     return(silhouette.score)
+}
 
 
 #' @title create_pixel_grid
@@ -112,7 +155,6 @@ plotElbow <- function(results, elbow = NULL){
 #' @param xbreaks the # of pixels to break the x-axis into. Defaults to 100.
 #' @param ybreaks the # of pixels to break the y-axis into. Defaults to 100.
 #' @keywords internal
-#' @export
 create_pixel_grid <- function(xbreaks =100, ybreaks = 100) {
         xbreaks <-xbreaks
         ybreaks <-ybreaks
@@ -152,17 +194,6 @@ generate_density_map <- function(data, pixel.grid = pixel.grid, xbreaks = 100, y
 }
 
 
-###############################
-## PIXEL CLASS ENTROPY SCORE ##
-###############################
-# calculate_pceScore <- function(data) {
-#   pce.score = split(data, data$pixel) %>% lapply(., function(dp) {data.frame(entropy = entropy(dp$count), num.of.labels = length(dp$labels)) } ) %>% do.call("rbind",.)
-#   pce.score["pce.score"] = 1-(pce.score$entropy/log2(pce.score$num.of.labels))
-#   pce.score["pce.score"] = ifelse(is.na(pce.score$pce.score), 1 , pce.score$pce.score)
-#   pce.score["pixel"] = rownames(pce.score)
-#   return(pce.score)
-# }
-
 #' @title calculate_Score
 #' @description calculate_Score: This function computes the pixel class entropy score.
 #' @param density_metric_output the output from the function, density_metric_output
@@ -183,7 +214,7 @@ calculate_pceScore <- function(data = density_metric_output) {
 #' @title computePCEscore
 #' @description computePCEscore: computes the pixel class entropy score for any biaxial dataset with class labels
 #' @param data a dataframe with 3 columns: x-axis coordinates (labeled `x`), y-axis coordinates(labeled `y`), and the class labels (labeled as `labels`)
-#' @export
+#' @noRd
 computePCEscore <- function(data) {
         ## data in format of x(axis1), y(axis2), class label of interest
 
@@ -197,105 +228,6 @@ computePCEscore <- function(data) {
         return(pce.score)
 }
 
-##########################
-## PIXEL DENSITY SCORE  ##
-##########################
-# description: calculate_pixelDensityScore: computes the pixel density score for any biaxial dataset with class labels. Must finish recoding. FYI see lapply commented out for reminder on what needs to change
-# param data: a dataframe with 3 columns: x-axis coordinates (labeled `x`), y-axis coordinates(labeled `y`), and the class labels (labeled as `labels`)
-# calculate_pixelDensityScore <- function(data = density_metric_output) {
-#
-#   data <- na.omit(data) %>% ungroup()
-#   # message("calculate-pixel-clonality")
-#
-#   pixelDensity.score <- data %>%
-#     dplyr::ungroup() %>%
-#     dplyr::mutate(binary.labels = ifelse(labels == class.label, "class.of.interest", "other")) %>%
-#     dplyr::select(pixel, x, y, percent.0, binary.labels) %>%
-#     dplyr::group_by(pixel, x, y, binary.labels) %>%
-#     dplyr::summarize(count = sum(count.0),
-#               percent = sum(percent.0)) %>%
-#     tidyr::gather(key = "approach", value = "quantity", -pixel,-x,-y,-binary.labels) %>%
-#     tidyr::spread(key = "binary.labels", value = "quantity") %>%
-#     dplyr::rowwise() %>%
-#     dplyr::mutate(class.of.interest = ifelse(is.na(class.of.interest), 0, class.of.interest),
-#            other = ifelse(is.na(other), 0, other),
-#            density.metric = (class.of.interest / (other+class.of.interest)),
-#            # density.metric = ifelse()
-#            labels = class.label)  %>%
-#     # dplyr::select(pixel,x,y, approach, class.of.interest, other,density.metric, labels) %>%
-#     dplyr:: group_by(approach, labels) %>%
-#     dplyr::summarize(density.summary = sum(density.metric)) %>%
-#     dplyr::mutate(density.summary.normalized = density.summary / 10000)
-#   return(pixelDensity.score)
-# }
-
-
-########################
-## EUCLIDEAN DISTANCE ##
-########################
-#' @description getScore_euclidean: An aggregate function to compute LDA and euclidean distance score for HSS.
-#' @param x dataframe of training data
-#' @param y vector of class labels matching training data rows
-#' @param cols vector of column names
-#' @noRd
-getScore_euclidean <- function(x, y, cols) {
-        # performs LDA using columns provided and returns lowest euclidean distance between pop means
-        lda.out <- lda(y~as.matrix(x[, cols]))
-        eucl_score = min(dist(lda.out$means %*% lda.out$scaling[,1:2]))
-        # message(eucl_score)
-        return(eucl_score)
-}
-
-#' @description getScore_euclidean_mean: An aggregate function to compute LDA and an average euclidean distance score across all classes for HSS
-#' @param x dataframe of training data
-#' @param y vector of class labels matching training data rows
-#' @param cols vector of column names
-#' @noRd
-getScore_euclidean_mean <- function(x, y, cols) {
-        # performs LDA using columns provided and returns lowest euclidean distance between pop means
-        lda.out <- lda(y~as.matrix(x[, cols]))
-        eucl_score = mean(dist(lda.out$means %*% lda.out$scaling[,1:2]))
-        # message(eucl_score)
-        return(eucl_score)
-}
-
-#' @description getScore_euclidean_2class: An aggregate function to compute LDA and euclidean distance score for HSS specifically for 2-class LDA
-#' @param x dataframe of training data
-#' @param y vector of class labels matching training data rows
-#' @param cols vector of column names
-#' @noRd
-getScore_euclidean_2class <- function(x, y, cols) {
-        # performs LDA using columns provided and returns lowest euclidean distance between pop means
-        lda.out <- lda(y~as.matrix(x[, cols]))
-        eucl_score = min(dist(lda.out$means %*% lda.out$scaling[,1]))
-        # message(eucl_score)
-        return(eucl_score)
-}
-#######################
-## SILHOUETTE SCORE  ##
-#######################
-#' @description getScore_silhouette: An aggregate function to compute LDA and silouette score for HSS.
-#' @param x dataframe of training data
-#' @param y vector of class labels matching training data rows
-#' @param cols vector of column names
-#' @noRd
-#' @keywords internal
-getScore_silhouette  <- function(x, y, cols) {
-
-        ## computes precise silhouette score but is slow since it requires a distance matrix
-        df = x[, cols] %>% as.matrix()
-        lda.out <- lda(y~as.matrix(x[, cols]))
-
-        dist.matrix = df %>% dist() %>% as.matrix()
-        silhoutte.output = silhouette(x = as.numeric(factor(y)), dmatrix = dist.matrix, do.clus.stat = TRUE, do.n.k=TRUE )
-
-        silh.result.all = df %>% cbind(., data.frame(cluster = silhoutte.output[,1], neighbor = silhoutte.output[,2], sil_width = silhoutte.output[,3] ))
-        sum.sil = summary(silhoutte.output)
-        silhouette.score = mean(sum.sil$clus.avg.widths)
-        # message(silhouette.score)
-        return(silhouette.score)
-}
-
 ##########################################
 ## PIXEL CLONALITY ENTROPY (PCE) SCORE  ##
 ##########################################
@@ -304,7 +236,6 @@ getScore_silhouette  <- function(x, y, cols) {
 #' @param y vector of class labels matching training data rows
 #' @param cols vector of column names
 #' @noRd
-#' @keywords internal
 getScore_pce <- function(x, y, cols) {
         ## pixel clonality scoring method
         lda.out <- lda(y~as.matrix(x[, cols]))
@@ -321,27 +252,6 @@ getScore_pce <- function(x, y, cols) {
         # message(pce.score)
         return(pce.score)
 }
-
-# getScore_pixelDensity <- function(x, y, cols) {
-#   ## pixel clonality scoring method
-#   # performs LDA using columns provided and returns lowest euclidean distance between pop means
-#   lda.out <- lda(y~., data=x[, cols])
-#
-#   if (!exists("pixel.grid")){
-#     pixel.grid <- create_pixel_grid()
-#   }
-#   data.pixels <- as.matrix(x[, cols]) %*% lda.out$scaling
-#   data.pixels <- data.pixels[ , c("LD1","LD2" )]%>% data.frame()
-#   data.pixels["labels"] <- y
-#   colnames(data.pixels) <- c("x","y","labels")
-#
-#   density_metric_output <- generate_density_map(data = data.pixels, pixel.grid = pixel.grid)
-#   pixelDensity_output <- calculate_pixelDensityScore(data = density_metric_output)
-#   pixelDensity.score <-  mean(pixelDensity_output$density.summary.normalized)
-#   # message(pixelDensity.score)
-#   return(pixelDensity.score)
-# }
-
 ###############################
 ## CUSTOM TEMPLATE FUNCTION  ##
 ###############################
@@ -437,98 +347,6 @@ hybridSubsetSelection <- function(x, y, score.method , custom.score.method = NUL
         results$score <- 0
 
         hss.result = list() ## final output
-
-        #############################
-        #############################
-        #############################
-        ##### SCORING FUNCTIONS #####
-        #############################
-        #############################
-        #############################
-
-
-
-        # #######################
-        # ## SILHOUETTE SCORE  ##
-        # #######################
-        # getScore_silhouette  <- function(x, y, cols) {
-        #   df = x[, cols, with=F]
-        #   lda.out <- lda(y~., data=df)
-        #   dist.matrix <- df %>% dist() %>% as.matrix()
-        #   silhoutte.output <- cluster::silhouette(x = as.numeric(factor(y)), dmatrix = dist.matrix, do.clus.stat = TRUE, do.n.k=TRUE )
-        #
-        #   silh.result.all<- df %>%
-        #     bind_cols(., data.frame(cluster = silhoutte.output[,1], neighbor = silhoutte.output[,2], sil_width = silhoutte.output[,3] ))
-        #   sum.sil <- summary(silhoutte.output)
-        #   silhouette.score = mean(sum.sil$clus.avg.widths)
-        #   message(silhouette.score)
-        #   return(silhouette.score)
-        # }
-
-        ######################################
-        ## PIXEL CLASS ENTROPY (PCE) SCORE  ##
-        ######################################
-        # getScore_pce <- function(x, y, cols) {
-        #   ## pixel clonality scoring method
-        #   # performs LDA using columns provided and returns lowest euclidean distance between pop means
-        #   lda.out <- lda(y~., data=x[, cols, with=F])
-        #   data.pixels <- makeAxes(dt = x[, cols, with=F], co=lda.out$scaling)
-        #   data.pixels <- data.pixels[ , c("ld1","ld2" )]
-        #   data.pixels$labels <- y
-        #   colnames(data.pixels) <- c("x","y","labels")
-        #
-        #   if (!exists("pixel.grid")){
-        #     pixel.grid <<- create_pixel_grid()
-        #   }
-        #
-        #   density_metric_output <- generate_density_map(data = data.pixels, pixel.grid = pixel.grid)
-        #   pce.score_output <- calculate_pceScore(data = density_metric_output)
-        #   pce.score <-  mean(pce.score_output$pce.score)
-        #   message(pce.score)
-        #   return(pce.score)
-        # }
-
-
-
-
-
-
-
-        ####################
-        ## begin analysis ##
-        ####################
-
-        ## original, euclidean distance based function
-        # } else if (score.method == "pixel.density") {
-        #   ## pixel density scoring method
-        #   getScore <<- function(cols) {
-        #     # performs LDA using columns provided and returns lowest euclidean distance between pop means
-        #     message(length(cols))
-        #     lda.out <<- lda(y~., data=x[, cols, with=F])
-        #     # message(lda.out)
-        #     df.density <<- makeAxes(dt = x[, cols, with=F], co=lda.out$scaling)
-        #     df.density <<- df.density[ , c("ld1","ld2" )]
-        #     df.density$labels <- factor(dat$labels)
-        #     colnames(df.density) <- c("x","y","labels")
-        #     coordinate.density <- list()
-        #     pixel.label.density_sc <- list()
-        #
-        #     pixel.grid <- create_pixel_grid()
-        #     density_metric_output <- generate_density_map(data = df.density, pixel.grid = pixel.grid)
-        #     # pixel.clonality_output <- calculate_entropy_metric(data = density_metric_output) %>% mutate(filename = file.name)
-        #     # pixel.clonality.metric <<- dplyr::bind_rows(pixel.clonality.metric, pixel.clonality_output)
-        #     coordinate.density <- dplyr::bind_rows(coordinate.density, density_metric_output )
-        #     density_metric_output <- calculate_pixel_density_metric(data=density_metric_output)
-        #     pixel.label.density_sc <-  dplyr::bind_rows(pixel.label.density_sc, density_metric_output)
-        #     density_metric_output <- aggregate_pixel_density_metric(data=density_metric_output)
-        #     # density_metric_output$filename = file.name
-        #     ave.density_metric_output <- density_metric_output %>% dplyr::filter(approach == "percent")
-        #     mean.score = mean(ave.density_metric_output$density.summary.normalized)
-        #
-        #     message(mean.score)
-        #     if (two.d) return(mean.score)
-        #     return(min(dist(lda.out$means %*% lda.out$scaling[,1])))
-        #   }
 
         ##subset functions
         addOne <- function() {
@@ -765,190 +583,7 @@ runHSS <- function(x, y, score.method, custom.score.method = NULL, downsample = 
         return(hss.results)
 }
 
-# setwd("~/phd-projects")
-# library(dplyr)
-# library(magrittr)
-# library(ggplot2)
-# path  <- "~/phd-projects/sc-lda/data/analysis-ready/metabolism-CD8-naive-data_cell-allmarkers.csv"
-# channels <- c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1',
-#               'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A', 'PDK1_p', 'NRF1',
-#               'NRF2_p', 'XBP1', 'VDAC1', 'OPA1', 'DRP1', 'ASCT2', 'GLS', 'GOT2', 'CPT1A',
-#               'ACADM', 'IdU', 'BrU', 'Puromycin', 'H3_p',
-#               "CD45RA",
-#               # "CD69","CD25"
-#               "CD69","CD3","CD98","CD25","CD27","CD137","CD57"
-#
-#               # 'DNA','barium'
-# )
-# dat_input <- data.table::fread(path)
-# dat <- dat_input %>%
-#   filter(H3_p < 0.05,
-#          dead < 0.3)  %>%
-#   group_by(labels) %>%
-#   sample_n(1000) %>%
-#   data.frame()
-# # fwrite(dat, file = output_path)
-# # training data with appropriate channels
-# train.x <- dat[, channels[1:12]]
-# # training class labels - must be 3+ unique classes
-# train.y <- dat$labels
-# #
-# # # x=train.x
-# # # y=train.y
-# #
-# start.time = Sys.time()
-# # hss.results=runHSS(x = train.x, y = train.y, score.method = "euclidean")
-# # hss.results=runHSS(x = train.x, y = train.y, score.method = "silhouette")
-# hss.results=runHSS(x = train.x, y = train.y, score.method = "pixel.entropy")
-# end.time = Sys.time()
-# coefficients <- hybridSubsetSelection(x=train.x, y=train.y, score.method = "pixel.entropy")
-# #
-# end.time-start.time
-#
-# start.time.1 = Sys.time()
-# hss.results=runHSS(x = train.x, y = train.y, score.method = "euclidean")
-# end.time.1 = Sys.time()
-# end.time.1-start.time.1
-#
-# start.time.2 = Sys.time()
-# hss.results=runHSS(x = train.x, y = train.y, score.method = "silhouette")
-# end.time.2 = Sys.time()
-# end.time.2-start.time.2
-#
-# start.time.3 = Sys.time()
-# hss.results=runHSS(x = train.x, y = train.y, score.method = "pixel.entropy")
-# end.time.3 = Sys.time()
-# end.time.3-start.time.3
-# end.time.1-start.time.1
-# end.time.2-start.time.2
-# end.time.3-start.time.3
-# start.time.4 = Sys.time()
-# hss.results=runHSS(x = train.x, y = train.y, score.method = "pixel.density")
-# end.time.4 = Sys.time()
-# hss.results=runHSS(x = train.x, y = train.y, score.method = "silhouette")
 
-
-
-
-
-
-
-# remotes::install_github("mamouzgar/hsslda")
-
-
-
-
-
-
-
-# dat <- makeAxes()
-# # cluster::silhouette(x = y)
-# # dist.matr = dist(train.x) %>% as.matrix()
-# # silhoutte.output <- cluster::silhouette(x = as.numeric(factor(train.y)), dmatrix = dist.matr, do.clus.stat = TRUE, do.n.k=TRUE )
-# ggplot(hss.results$`HSS-LDA-result`, aes(x = ld1, y= ld2)) +
-#   geom_point(aes(color = labels)) +
-#   viridis::scale_color_viridis(discrete=TRUE)
-
-
-# Once you’ve got your documentation completed, you can simply run:
-#
-#   devtools::document()
-# This will generate the load_mat.Rd file in the man folder:
-#
-# You will get one .Rd file for each function in your R package.
-#
-# Each time you add new documentation to your R function, you need to run devtools::document() again to re-generate the .Rd files.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ## computes estimate of the silhouette score but is faster since it bypasses the distance matrix
-# df = x[, cols] %>% as.matrix()
-# lda.out <- lda(y~as.matrix(x[, cols]))
-#
-# si = cluster::silhouette(x = as.numeric(factor(rownames(as.matrix(dist(lda.out$means %*% lda.out$scaling[ ,1:2]))))), dmatrix = as.matrix(dist(lda.out$means %*% lda.out$scaling[ ,1:2])))
-#
-#
-# summary(silhoutte.output)$clus.avg.wi
-# as.matrix(dist(lda.out$means %*% lda.out$scaling[ ,1:2]))
-#
-# intercluster.distance = apply(as.matrix(dist(lda.out$means %*% lda.out$scaling[ ,1:2])), MARGIN = 1, max)
-# avg.intercluster.distance = mean(matrix(dist(lda.out$means %*% lda.out$scaling[ ,1:2]))) ## average distance to each class label centroid
-#
-# lds = as.matrix(hsslda::TcellHartmann2020_sampleData[1:5]) %*% lda.out$scaling[ ,1:2] %>% data.frame()
-# lds$y = factor(hsslda::TcellHartmann2020_sampleData$labels)
-# euc.dist <- function(x1, x2) sqrt(sum((x1 - x2) ^ 2))
-#
-# centroids = lda.out$means %*% lda.out$scaling[ ,1:2] %>% data.frame() %>%mutate(y = rownames(.)) %>% as_tibble() %>% rename(centroid.LD1=LD1, centroid.LD2 = LD2)
-# lds = lds %>% left_join(., centroids ) %>%
-#         rowwise() %>%
-#         mutate(distance = sqrt(((centroid.LD2 - LD2)^2) + ((centroid.LD1 - LD1)^2)),
-#                intercluster.distances = lapply(centroids$y, function(centroid.label){
-#                        myCentroid = centroids[centroids$y == centroid.label, ]
-#                        dist.to.centroid = sqrt(((LD2 - myCentroid$centroid.LD2)^2) + ((LD2 - myCentroid$centroid.LD1)^2))
-#                        names(dist.to.centroid) = centroid.label
-#                        return(dist.to.centroid)
-#                } ) %>%  list(),
-#                closest.cluster = unlist(intercluster.distances) %>% .[!names(.) %in% y] %>% min())
-#
-# silhs = lds %>% rowwise() %>% mutate(silh = (closest.cluster - distance)/max(lds$distance,lds$closest.cluster) )
-# nearest.cluster = apply(lds, MARGIN = 1, function(values){values['distance']})
-#
-#
-# lds.mean = lds %>%
-#         group_by(y) %>%
-#         summarize(intra.cluster.dist = mean(distance))
-#
-# lds.silh = lds %>% left_join(.,lds.mean)
-# Silhouette.Score = lds.silh  %>% mutate(silh = (intra.cluster.dist - distance)/ max(intra.cluster.dist, distance))  # (b-a)/max(a,b)
-#
-#
-# avg.intracluster.distance = mean(lds$intra.cluster.dist ) ## average distance to the centroid
-#
-#
-#
-#
-#
-# silhoutte.output = cluster::silhouette(x = as.numeric(factor(hsslda::TcellHartmann2020_sampleData$labels)), dmatrix = as.matrix(dist(as.matrix(hsslda::TcellHartmann2020_sampleData[1:5]) %*% lda.out$scaling[ ,1:2])))
-# sum.sil = summary(silhoutte.output)
-# sum.sil$clus.avg.widths
-# silhouette.score # 0.02538235
-# )
-#
-#
-# lda.out = MASS::lda(hsslda::TcellHartmann2020_sampleData[-(ncol(TcellHartmann2020_sampleData))],hsslda::TcellHartmann2020_sampleData$labels)
-
-
-
-# channels = c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1', 'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A')
-# train.x = TcellHartmann2020_sampleData %>% dplyr::filter(labels %in% c("day0","day4")) %>% .[channels]
-# train.y = TcellHartmann2020_sampleData%>% dplyr::filter(labels %in% c("day0","day4")) %>% .[['labels']]
-# test = data.table::fread("/Users/meelad/phd-projects/sc-lda/data/original-data/invitro-tcells-c393.csv") %>% as_tibble()
-#
-# channels.metabolism <- c('GLUT1', 'HK2', 'GAPDH', 'LDHA', 'MCT1', 'PFKFB4', 'IDH2', 'CyclinB1',
-#                          'GLUD12', 'CS', 'OGDH', 'CytC', 'ATP5A', 'S6_p', 'HIF1A', 'PDK1_p', 'NRF1',
-#                          'NRF2_p', 'XBP1', 'VDAC1', 'OPA1', 'DRP1', 'ASCT2', 'CD98', 'GLS', 'GOT2', 'CPT1A',
-#                          'ACADM', 'IdU', 'BrU', 'Puromycin', 'H3_p')
-# test$cell.id = paste("cell",1:nrow(test),sep="")
-# train = test %>% dplyr::filter(grepl("naive",gate.source),grepl("CD8",gate.source), grepl("day0|day4",gate.source)) %>%
-#         group_by(gate.source) %>% sample_n(5000) %>% .$cell.id
-#
-# train.x = test  %>% .[ .$cell.id %in% train, channels.metabolism]
-# train.y = test%>% .[ .$cell.id %in% train, "gate.source"] %>% .$gate.source
-# hss.result = runHSS(x = train.x, y = factor(train.y), score.method = 'euclidean_2class', downsample = FALSE)
 
 
 

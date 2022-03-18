@@ -11,7 +11,7 @@ Description: This package performs Linear Discriminant Analysis (LDA) with Hybri
 License: GPL-3.0 License
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Imports: MASS, ggplot2, dplyr, tidyr, stats
 Suggests: entropy, cluster, knitr, rmarkdown
 VignetteBuilder: knitr
