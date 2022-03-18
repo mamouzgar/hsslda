@@ -219,7 +219,7 @@ head(lda.df, 3)
     ## 3 0.09690983 -1.0026704 -2.758428 2.453262 3.370301  0.09091075   day0
 
 ``` r
-ggplot2::ggplot(lda.df,ggplot2::aes(x = LD1, y = LD2, color = labels)) +
+ggplot2::ggplot(lda.df,ggplot2::aes(x = HSS_LD1, y = HSS_LD2, color = labels)) +
   ggplot2::geom_point() 
 ```
 
