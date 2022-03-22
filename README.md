@@ -271,6 +271,13 @@ to new data using makeAxes.
 lda.df.newData = makeAxes(df = newdata, co =hss.result$`HSS-LDA-model`$scaling)
 ```
 
+To run LDA without HSS, you can use the MASS package in R, then use makeAxes to generate your LD axes or apply it to a new dataset.
+```r
+lda.res = MASS::lda(x = train.x, grouping = train.y)
+lda.df.newData = makeAxes(df = train.x, co =lda.res$scaling)
+
+```
+
 You can also add your own custom separation metric to perform feature
 selection with by changing score.method = ‘custom’ and adding custom
 function. The custom function must take in as input:
