@@ -277,7 +277,7 @@ lda.df.newData = makeAxes(df = newdata, co =hss.result$`HSS-LDA-model`$scaling)
 To run LDA without HSS, you can use the MASS package in R, then use makeAxes to generate your LD axes or apply it to a new dataset.
 ```r
 lda.res = MASS::lda(x = train.x, grouping = train.y)
-lda.df.newData = makeAxes(df = train.x, co =lda.res$scaling)
+lda.df = makeAxes(df = train.x, co =lda.res$scaling)
 
 ```
 
