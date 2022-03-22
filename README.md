@@ -18,6 +18,9 @@ separate specific aspects of cellular heterogeneity. We implement LDA
 with feature selection by Hybrid Subset Selection (HSS) in this R
 package, called hsslda.
 
+If you use our package, please cite our preprint:
+https://www.biorxiv.org/content/10.1101/2022.01.06.475279v1 
+
 Installation instructons:
 -------------------------
 
