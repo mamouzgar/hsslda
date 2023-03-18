@@ -19,6 +19,7 @@ with feature selection by Hybrid Subset Selection (HSS) in this R
 package, called hsslda.
 
 If you use our package, please cite our manuscript:
+
 https://doi-org.stanford.idm.oclc.org/10.1016/j.patter.2022.100536
 
 Amouzgar M, Glass DR, Baskar R, Averbukh I, Kimmey SC, Tsai AG, Hartmann FJ, Bendall SC. Supervised dimensionality reduction for exploration of single-cell data by HSS-LDA. Patterns (N Y). 2022 Jun 24;3(8):100536. doi: 10.1016/j.patter.2022.100536. PMID: 36033591; PMCID: PMC9403402.
